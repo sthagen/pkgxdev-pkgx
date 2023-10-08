@@ -24,6 +24,7 @@ export default async function(pkgs: PackageRequirement[]) {
 
   async function write(dst: Path, pkgs: PackageRequirement[]) {
     for (const pkg of pkgs) {
+      program_loop:
       for (const program of await usePantry().project(pkg).provides()) {
 
         // skip for now since we would require specific versions and we haven't really got that
@@ -31,6 +32,12 @@ export default async function(pkgs: PackageRequirement[]) {
 
         const pkgstr = utils.pkg.str(pkg)
         const exec = `exec pkgx +${pkgstr} -- ${program} "$@"`
+        const script = undent`
+          if [ "$PKGX_UNINSTALL" != 1 ]; then
+            ${exec}
+          else
+            rm "$0" && echo "uninstalled: $0" >&2
+          fi`
         const f = dst.mkdir('p').join(program)
 
         if (f.exists()) {
@@ -44,21 +51,23 @@ export default async function(pkgs: PackageRequirement[]) {
           if (shebang != "#!/bin/sh") {
             throw new PkgxError(`${f} already exists and is not a pkgx installation`)
           }
-          const { value } = await lines.next()
-          if (value == exec) {
-            console.warn(`pkgx: already installed: ${blurple(program)} ${dim(`(${pkgstr})`)}`)
-            n++
-            continue
-          }
-          if (!value.startsWith('exec pkgx')) {
-            throw new PkgxError(`${f} already exists and is not a pkgx installation`)
+          while (true) {
+            const { value, done } = await lines.next()
+            if (value == exec) {
+              console.warn(`pkgx: already installed: ${blurple(program)} ${dim(`(${pkgstr})`)}`)
+              n++
+              continue program_loop
+            }
+            if (done) {
+              throw new PkgxError(`${f} already exists and is not a pkgx installation`)
+            }
           }
         }
 
         f.write({ force: true, text: undent`
           #!/bin/sh
-          ${exec}
-          ` }).chmod(0o755)
+          ${script}`
+        }).chmod(0o755)
         console.error('pkgx: installed:', f)
         n++
       }

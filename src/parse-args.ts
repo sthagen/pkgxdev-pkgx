@@ -35,7 +35,7 @@ export type Args = {
     mode: 'internal.activate'
     dir: Path
   } | {
-    mode: 'install'
+    mode: 'install' | 'uninstall'
     args: string[]
   }
 )
@@ -60,6 +60,7 @@ export default function(input: string[]): Args {
   switch (input[0]) {
   case 'deintegrate':
   case 'integrate':
+  case 'uninstall':
   case 'install':
   case 'run':
     mode = input[0]
