@@ -144,16 +144,19 @@ available to the environment.
 We removed “magic” from pkgx at v1 because it had a number of unsolvable
 issues. If you want it back however fortunately the shellcode is simple:
 
-```sh
+```bash
 function command_not_found_handle {
   pkgx -- "$*"
 }
+# NOTE in zsh append an `r` ie `command_not_found_handler``
 ```
 
 
 ## How do I uninstall `pkgx`?
 
-Coming Soon
+For now `rm -rf ~/.pkgx` is enough.
+
+*Coming Soon*.
 
 ```sh
 pkgx uninstall pkgx
